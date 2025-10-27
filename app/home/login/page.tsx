@@ -1,19 +1,27 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { FaRegUser, FaLock } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { baseUrl } from "../../Components/baseUrl";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState(""); // changed from phone
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const [year, setYear] = useState<number | null>(null);
+
+useEffect(() => {
+  setYear(new Date().getFullYear());
+}, []);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(""); // clear previous errors
 
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -21,24 +29,36 @@ export default function LoginPage() {
     }
 
     try {
-      // Admin login API
       const res = await fetch(`${baseUrl}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+console.log(res);
+
+      // if the server didn’t respond properly (CORS/network issue)
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Server Response:", text);
+        throw new Error(`Login failed with status ${res.status}`);
+      }
 
       const data = await res.json();
 
-      if (res.ok) {
-        localStorage.setItem("token", data.token); // store admin token
-        router.push("/admin-dashboard"); // navigate to admin dashboard
-        alert('Login sucesful')
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        alert("Login successful");
+        router.push("/admin-dashboard");
       } else {
         setError(data.message || "Invalid credentials");
       }
-    } catch (err) {
-      setError("Server error. Please try again.");
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      if (err.message.includes("CORS")) {
+        setError("CORS error: Server not allowing frontend domain");
+      } else {
+        setError("Server error. Please try again.");
+      }
     }
   };
 
@@ -50,7 +70,6 @@ export default function LoginPage() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md bg-white/60 backdrop-blur-xl shadow-2xl rounded-3xl border border-white/20 p-8"
       >
-        {/* Title */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-blue-700 mb-2 tracking-tight">
             UrbanProperties
@@ -58,7 +77,6 @@ export default function LoginPage() {
           <p className="text-gray-600">CRM Login Portal</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
             <FaRegUser className="absolute left-4 top-3.5 text-gray-400" />
@@ -68,6 +86,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              autoComplete="email"
             />
           </div>
 
@@ -79,6 +98,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white border border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              autoComplete="current-password"
             />
             <button
               type="button"
@@ -119,10 +139,9 @@ export default function LoginPage() {
           </motion.button>
         </form>
 
-        {/* Footer */}
         <p className="mt-8 text-center text-gray-500 text-sm">
-          © {new Date().getFullYear()} UrbanProperties CRM. All Rights Reserved.
-        </p>
+  © {year ?? ""} UrbanProperties CRM. All Rights Reserved.
+</p>
       </motion.div>
     </div>
   );

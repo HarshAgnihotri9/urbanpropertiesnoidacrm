@@ -1,5 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
+
+'use client'
 import HeroSection from "../Components/HeroSection";
 import FeaturesSection from "../Components/FeaturesSection";
 import HowItWorksSection from "../Components/HowItWorks";
