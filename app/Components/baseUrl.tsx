@@ -1,1 +1,1 @@
-export const baseUrl='https://calling-crm-urban-properties.vercel.app/'
+export const baseUrl='https://calling-crm-urban-properties.vercel.app'
